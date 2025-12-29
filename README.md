@@ -1,6 +1,6 @@
 # Bitcoin Transaction Analyzer
 
-A desktop application for tracking and analyzing Bitcoin transactions with advanced filtering and visualization capabilities.
+A desktop application for tracking and analyzing Bitcoin transactions with simple filtering and visualization capabilities.
 
 ## Features
 
@@ -19,7 +19,7 @@ A desktop application for tracking and analyzing Bitcoin transactions with advan
 ## Screenshots
 
 The application provides:
-- A clean, modern interface for entering Bitcoin addresses
+- A simple interface for entering Bitcoin addresses
 - A comprehensive data table showing transaction hashes, dates, and amounts
 - Interactive filtering controls for customized analysis
 - Dynamic charts for visualizing transaction patterns over time
@@ -110,16 +110,6 @@ python SiguriProjekt.py
 - Timestamps are converted to human-readable dates
 - Data is cached locally for filtering without additional API calls
 
-### UI Components
-
-- Modern, clean interface with Material Design-inspired colors
-- Responsive layout with minimum window size constraints
-- Centered window positioning on application start
-- Status indicators for API request progress
-
-## API Usage
-
-This application uses the free Blockchain.info API. Please be mindful of rate limits when making requests.
 
 ## Troubleshooting
 
@@ -132,11 +122,6 @@ This application uses the free Blockchain.info API. Please be mindful of rate li
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
-## License
+## Notes
 
 This project is available for educational and personal use.
-
-## Acknowledgments
-
-- Blockchain.info for providing the transaction API
-- Built with Python, tkinter, and matplotlib
