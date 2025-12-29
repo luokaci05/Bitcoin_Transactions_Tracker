@@ -11,6 +11,8 @@ BG = "#FFFFFF"
 CARD = "#FFFFFF"
 TEXT = "#111111"
 
+# TO RUN THE SCRIPT USE THE FOLLOWING COMMAND IN TERMINAL:
+# & ".venv/Scripts/python.exe" "SiguriProjekt.py"
 
 # ---------------- BACKEND ----------------
 
@@ -393,6 +395,3 @@ group_combo.bind("<<ComboboxSelected>>", lambda e: apply_filters())
 all_records = []
 
 root.mainloop()
-
-# TO RUN THE SCRIPT USE THE FOLLOWING COMMAND IN TERMINAL:
-# & ".venv/Scripts/python.exe" "SiguriProjekt.py"
