@@ -16,16 +16,16 @@ TEXT = "#111111"
 
 def fetch_transactions(address, timeout=10):
     """
-    Merr transaksionet nga Blockchain API
+    Fetch transactions from Blockchain API
     """
     url = f"https://blockchain.info/rawaddr/{address}"
     try:
         response = requests.get(url, timeout=timeout)
     except requests.RequestException as exc:
-        raise Exception(f"Gabim rrjeti: {exc}") from exc
+        raise Exception(f"Network error: {exc}") from exc
 
     if response.status_code != 200:
-        raise Exception("Adresa Bitcoin nuk u gjet ose API nuk përgjigjet")
+        raise Exception("Bitcoin address not found or API is not responding")
 
     data = response.json()
     return data.get("txs", [])
@@ -33,8 +33,8 @@ def fetch_transactions(address, timeout=10):
 
 def parse_transactions(txs):
     """
-    Parsimi i transaksioneve:
-    kthen listë records për përdorim në tabelë dhe grafik.
+    Parse transactions:
+    returns list of records for use in table and graph.
     """
     records = []
 
@@ -46,7 +46,7 @@ def parse_transactions(txs):
 
         records.append({
             "hash_full": tx_hash or "",
-            "hash": (tx_hash[:15] + "...") if tx_hash else "(pa hash)",
+            "hash": (tx_hash[:15] + "...") if tx_hash else "(no hash)",
             "dt": dt,
             "date_str": dt.strftime("%Y-%m-%d %H:%M"),
             "amount": round(amount_btc, 8)
@@ -59,7 +59,7 @@ def parse_transactions(txs):
 
 def show_graph(records, group_by="Month", title_suffix=""):
     """
-    Grafik i frekuencës së transaksioneve mbi të dhënat e filtruar.
+    Graph of transaction frequency over filtered data.
     - Day/Week/Month: line chart
     - Year: bar chart
     """
@@ -75,7 +75,7 @@ def show_graph(records, group_by="Month", title_suffix=""):
         x_vals = sorted(freq.keys())
         y_vals = [freq[k] for k in x_vals]
         chart_type = "line"
-        x_label = "Data"
+        x_label = "Date"
     elif group_by == "Week":
         for r in records:
             dt = r["dt"]
@@ -84,7 +84,7 @@ def show_graph(records, group_by="Month", title_suffix=""):
         x_vals = sorted(freq.keys())
         y_vals = [freq[k] for k in x_vals]
         chart_type = "line"
-        x_label = "Java (fillon të Hënën)"
+        x_label = "Week (starts on Monday)"
     elif group_by == "Year":
         for r in records:
             k = r["dt"].year
@@ -92,7 +92,7 @@ def show_graph(records, group_by="Month", title_suffix=""):
         x_vals = sorted(freq.keys())
         y_vals = [freq[k] for k in x_vals]
         chart_type = "bar"
-        x_label = "Viti"
+        x_label = "Year"
     else:  # Month (default)
         for r in records:
             d = r["dt"]
@@ -101,7 +101,7 @@ def show_graph(records, group_by="Month", title_suffix=""):
         x_vals = sorted(freq.keys())
         y_vals = [freq[k] for k in x_vals]
         chart_type = "line"
-        x_label = "Muaji"
+        x_label = "Month"
 
     plt.style.use("default")
     fig, ax = plt.subplots(figsize=(10.5, 5.2), facecolor="#FFFFFF")
@@ -113,8 +113,8 @@ def show_graph(records, group_by="Month", title_suffix=""):
         ax.plot(x_vals, y_vals, color="#2563EB", marker="o")
 
     ax.set_xlabel(x_label)
-    ax.set_ylabel("Numri i Transaksioneve")
-    title = f"Transaksionet sipas {x_label}"
+    ax.set_ylabel("Number of Transactions")
+    title = f"Transactions by {x_label}"
     if title_suffix:
         title += f" — {title_suffix}"
     ax.set_title(title)
@@ -138,21 +138,21 @@ def handle_error(msg):
 
 
 def update_table(records):
-    # Pastrimi i tabelës
+    # Clear the table
     for row in table.get_children():
         table.delete(row)
 
-    # Mbushja e tabelës
+    # Fill the table
     for r in records:
         table.insert("", "end", values=(r["hash"], r["date_str"], r["amount"]))
 
 
 def apply_filters():
-    """Apliko filtrat mbi all_records dhe përditëso tabelën dhe grafikun."""
+    """Apply filters over all_records and update the table and graph."""
     if not all_records:
         return
 
-    # Filtri per periudhën (friendly labels)
+    # Filter by period (friendly labels)
     sel = period_var.get()
     now = datetime.now()
     start_dt = None
@@ -168,21 +168,21 @@ def apply_filters():
         start_dt = datetime(now.year, 1, 1)
     # "All time" -> start_dt = None
 
-    # Filtri per transaksion (hash contains)
+    # Filter by transaction (hash contains)
     q = search_var.get().strip().lower()
 
-    # Filtri per shumën
+    # Filter by amount
     min_txt = min_amount_var.get().strip()
     max_txt = max_amount_var.get().strip()
     try:
         min_val = float(min_txt) if min_txt else None
     except ValueError:
-        messagebox.showwarning("Vërejtje", "Min amount nuk është numër i vlefshëm.")
+        messagebox.showwarning("Warning", "Min amount is not a valid number.")
         min_val = None
     try:
         max_val = float(max_txt) if max_txt else None
     except ValueError:
-        messagebox.showwarning("Vërejtje", "Max amount nuk është numër i vlefshëm.")
+        messagebox.showwarning("Warning", "Max amount is not a valid number.")
         max_val = None
 
     filtered = []
@@ -199,19 +199,19 @@ def apply_filters():
 
     update_table(filtered)
 
-    # Përditëso grafikun vetëm nëse ka të dhëna
+    # Update the graph only if there is data
     if filtered:
-        suffix = sel if sel and sel != "All time" else "Të gjitha"
+        suffix = sel if sel and sel != "All time" else "All"
         group = group_by_var.get()
-        show_graph(filtered, group_by=group, title_suffix=f"Periudha: {suffix}")
+        show_graph(filtered, group_by=group, title_suffix=f"Period: {suffix}")
     else:
-        messagebox.showinfo("Info", "Nuk ka të dhëna pas filtrimit.")
+        messagebox.showinfo("Info", "No data after filtering.")
 
 
 def update_after_fetch(records):
     global all_records
     all_records = records
-    set_status("Gati", "green")
+    set_status("Ready", "green")
     btn.config(state="normal", text="Get Transactions")
     apply_filters()
 
@@ -229,11 +229,11 @@ def get_transactions():
     address = entry_address.get().strip()
 
     if not address:
-        messagebox.showwarning("Gabim", "Ju lutem vendosni një adresë Bitcoin!")
+        messagebox.showwarning("Error", "Please enter a Bitcoin address!")
         return
 
-    set_status("Duke marrë të dhënat...", "blue")
-    btn.config(state="disabled", text="Duke punuar...")
+    set_status("Fetching data...", "blue")
+    btn.config(state="disabled", text="Working...")
 
     worker = threading.Thread(target=load_transactions, args=(address,), daemon=True)
     worker.start()
@@ -247,7 +247,7 @@ root.geometry("920x620")
 root.minsize(820, 560)
 root.configure(bg=BG)
 
-# Centro dritaren në ekran
+# Center window on screen
 root.update_idletasks()
 screen_w = root.winfo_screenwidth()
 screen_h = root.winfo_screenheight()
@@ -285,7 +285,7 @@ title = ttk.Label(header, text="Bitcoin Transaction Analyzer",
                   font=("Segoe UI Semibold", 20))
 title.pack(anchor="center")
 
-subtitle = ttk.Label(header, text="Vendos adresën, zgjidh periudhën dhe filtro sipas hash/amount",
+subtitle = ttk.Label(header, text="Enter address, select period and filter by hash/amount",
                      font=("Segoe UI", 10))
 subtitle.pack(anchor="center", pady=(4, 0))
 
@@ -311,7 +311,7 @@ btn = tk.Button(
 )
 btn.pack()
 
-# Paneli i filtrave
+# Filter panel
 filters = ttk.Frame(root, padding=(16, 0, 16, 8))
 filters.pack(fill="x")
 
@@ -358,7 +358,7 @@ apply_btn = tk.Button(row1, text="Apply Filters", command=apply_filters,
                       relief="flat", padx=12, pady=6, font=("Segoe UI Semibold", 10))
 apply_btn.pack(side="left", padx=(10, 0))
 
-status_label = ttk.Label(root, text="Gati", foreground="#0B8043", font=("Segoe UI", 9))
+status_label = ttk.Label(root, text="Ready", foreground="#0B8043", font=("Segoe UI", 9))
 status_label.pack(anchor="center", padx=18, pady=(0, 8))
 
 table_frame = ttk.Frame(root, padding=(14, 0, 14, 14))
@@ -383,7 +383,7 @@ vsb.grid(row=0, column=1, sticky="ns")
 table_frame.columnconfigure(0, weight=1)
 table_frame.rowconfigure(0, weight=1)
 
-# Enter në search/amount -> apliko filtra
+# Enter in search/amount -> apply filters
 search_entry.bind("<Return>", lambda e: apply_filters())
 min_entry.bind("<Return>", lambda e: apply_filters())
 max_entry.bind("<Return>", lambda e: apply_filters())
