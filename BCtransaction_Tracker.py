@@ -12,7 +12,7 @@ CARD = "#FFFFFF"
 TEXT = "#111111"
 
 # TO RUN THE SCRIPT USE THE FOLLOWING COMMAND IN TERMINAL:
-# & ".venv/Scripts/python.exe" "SiguriProjekt.py"
+# & ".venv/Scripts/python.exe" "BCtransaction_Tracker.py"
 
 # ---------------- BACKEND ----------------
 
