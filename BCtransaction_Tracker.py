@@ -44,7 +44,10 @@ def parse_transactions(txs):
         tx_hash = tx.get("hash", "")
         timestamp = tx.get("time", 0)
         dt = datetime.fromtimestamp(timestamp)
-        amount_btc = sum(out.get("value", 0) for out in tx.get("out", [])) / 1e8
+
+        # Address-relative net value from API (satoshis). Positive = received, negative = sent.
+        result_sats = tx.get("result", 0) or 0
+        amount_btc = abs(result_sats) / 1e8  # use magnitude for chart/table
 
         records.append({
             "hash_full": tx_hash or "",
@@ -59,11 +62,11 @@ def parse_transactions(txs):
 
 # ---------------- VISUALIZIM ----------------
 
-def show_graph(records, group_by="Month", title_suffix=""):
+def show_graph(records, group_by="Month", metric="Count", title_suffix=""):
     """
-    Graph of transaction frequency over filtered data.
-    - Day/Week/Month: line chart
-    - Year: bar chart
+    Graph of transaction data over filtered records.
+    - Metric: "Count" (number of transactions) or "Amount (BTC)" (sum of BTC)
+    - Day/Week/Month: line chart; Year: bar chart
     """
     if not records:
         return
@@ -73,7 +76,7 @@ def show_graph(records, group_by="Month", title_suffix=""):
     if group_by == "Day":
         for r in records:
             k = r["dt"].date()
-            freq[k] = freq.get(k, 0) + 1
+            freq[k] = freq.get(k, 0) + (r["amount"] if metric == "Amount (BTC)" else 1)
         x_vals = sorted(freq.keys())
         y_vals = [freq[k] for k in x_vals]
         chart_type = "line"
@@ -82,7 +85,7 @@ def show_graph(records, group_by="Month", title_suffix=""):
         for r in records:
             dt = r["dt"]
             week_start = (dt - timedelta(days=dt.weekday())).date()
-            freq[week_start] = freq.get(week_start, 0) + 1
+            freq[week_start] = freq.get(week_start, 0) + (r["amount"] if metric == "Amount (BTC)" else 1)
         x_vals = sorted(freq.keys())
         y_vals = [freq[k] for k in x_vals]
         chart_type = "line"
@@ -90,7 +93,7 @@ def show_graph(records, group_by="Month", title_suffix=""):
     elif group_by == "Year":
         for r in records:
             k = r["dt"].year
-            freq[k] = freq.get(k, 0) + 1
+            freq[k] = freq.get(k, 0) + (r["amount"] if metric == "Amount (BTC)" else 1)
         x_vals = sorted(freq.keys())
         y_vals = [freq[k] for k in x_vals]
         chart_type = "bar"
@@ -99,7 +102,7 @@ def show_graph(records, group_by="Month", title_suffix=""):
         for r in records:
             d = r["dt"]
             k = date(d.year, d.month, 1)
-            freq[k] = freq.get(k, 0) + 1
+            freq[k] = freq.get(k, 0) + (r["amount"] if metric == "Amount (BTC)" else 1)
         x_vals = sorted(freq.keys())
         y_vals = [freq[k] for k in x_vals]
         chart_type = "line"
@@ -115,8 +118,8 @@ def show_graph(records, group_by="Month", title_suffix=""):
         ax.plot(x_vals, y_vals, color="#2563EB", marker="o")
 
     ax.set_xlabel(x_label)
-    ax.set_ylabel("Number of Transactions")
-    title = f"Transactions by {x_label}"
+    ax.set_ylabel("Amount (BTC)" if metric == "Amount (BTC)" else "Number of Transactions")
+    title = ("Amount" if metric == "Amount (BTC)" else "Transactions") + f" by {x_label}"
     if title_suffix:
         title += f" — {title_suffix}"
     ax.set_title(title)
@@ -136,7 +139,7 @@ def set_status(text, color="black"):
 def handle_error(msg):
     set_status(msg, "red")
     btn.config(state="normal", text="Get Transactions")
-    messagebox.showerror("Gabim", msg)
+    messagebox.showerror("Error", msg)
 
 
 def update_table(records):
@@ -205,7 +208,8 @@ def apply_filters():
     if filtered:
         suffix = sel if sel and sel != "All time" else "All"
         group = group_by_var.get()
-        show_graph(filtered, group_by=group, title_suffix=f"Period: {suffix}")
+        metric = metric_var.get()
+        show_graph(filtered, group_by=group, metric=metric, title_suffix=f"Period: {suffix}")
     else:
         messagebox.showinfo("Info", "No data after filtering.")
 
@@ -319,6 +323,7 @@ filters.pack(fill="x")
 
 period_var = tk.StringVar(value="Last 1 year")
 group_by_var = tk.StringVar(value="Month")
+metric_var = tk.StringVar(value="Amount (BTC)")
 search_var = tk.StringVar()
 min_amount_var = tk.StringVar()
 max_amount_var = tk.StringVar()
@@ -342,6 +347,11 @@ ttk.Label(row1, text="Group by:", font=("Segoe UI", 10)).pack(side="left", padx=
 group_combo = ttk.Combobox(row1, textvariable=group_by_var, width=10, state="readonly",
                            values=["Day", "Week", "Month", "Year"])
 group_combo.pack(side="left", padx=(0, 16))
+
+ttk.Label(row1, text="Metric:", font=("Segoe UI", 10)).pack(side="left", padx=(0, 6))
+metric_combo = ttk.Combobox(row1, textvariable=metric_var, width=14, state="readonly",
+                            values=["Count", "Amount (BTC)"])
+metric_combo.pack(side="left", padx=(0, 16))
 
 ttk.Label(row1, text="Transaction contains:", font=("Segoe UI", 10)).pack(side="left", padx=(10, 6))
 search_entry = ttk.Entry(row1, textvariable=search_var, width=28)
@@ -391,6 +401,7 @@ min_entry.bind("<Return>", lambda e: apply_filters())
 max_entry.bind("<Return>", lambda e: apply_filters())
 period_combo.bind("<<ComboboxSelected>>", lambda e: apply_filters())
 group_combo.bind("<<ComboboxSelected>>", lambda e: apply_filters())
+metric_combo.bind("<<ComboboxSelected>>", lambda e: apply_filters())
 
 all_records = []
 
