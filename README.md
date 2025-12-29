@@ -71,12 +71,12 @@ pip install requests matplotlib
 
 1. Run the application:
 ```bash
-python SiguriProjekt.py
+python BCtransaction_Tracker.py
 ```
 
    Or, if using a virtual environment on Windows:
 ```bash
-.venv\Scripts\python.exe SiguriProjekt.py
+.venv\Scripts\python.exe BCtransaction_Tracker.py
 ```
 
 2. **Enter a Bitcoin Address**: Type or paste a Bitcoin address in the input field (a sample address is pre-filled)
